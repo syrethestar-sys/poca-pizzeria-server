@@ -3,12 +3,13 @@ import { createMenuCategoryController } from "../../controller/menu-category/cre
 import { getMenuCategoryController } from "../../controller/menu-category/get-menu-category.js";
 import { updateMenuCategoryController } from "../../controller/menu-category/update-menu-category.js";
 import { deleteMenuCategoryController } from "../../controller/menu-category/del-menu-category.js";
+import { requireAdmin } from "../../middleware/auth.js";
 
 const router = express.Router();
 
-router.post("/create", createMenuCategoryController);
+router.post("/create", requireAdmin, createMenuCategoryController);
 router.get("/get", getMenuCategoryController);
-router.put("/update", updateMenuCategoryController);
-router.delete("/delete", deleteMenuCategoryController);
+router.put("/update", requireAdmin, updateMenuCategoryController);
+router.delete("/delete", requireAdmin, deleteMenuCategoryController);
 
 export default router;
