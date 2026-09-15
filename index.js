@@ -12,8 +12,14 @@ const app = express();
 
 const PORT = process.env.PORT ?? 1000;
 
-app.use(express.json());
-app.use(cors());
+// Wire webhook signatures are computed over the exact raw bytes, so the
+// parser stashes them before JSON-decoding the body.
+app.use(express.json({ verify: (request, response, buf) => { request.rawBody = buf; } }));
+app.use(
+  cors({
+    origin: [process.env.FRONTEND_URL, "http://localhost:3000"].filter(Boolean),
+  }),
+);
 
 app.use(async (request, response, next) => {
   try {

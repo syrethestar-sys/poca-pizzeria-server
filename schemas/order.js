@@ -46,6 +46,16 @@ const orderSchema = new mongoose.Schema(
       lon: { type: Number },
     },
     status: { type: String, enum: ORDER_STATUSES, default: "pending" },
+    payment: {
+      provider: { type: String, default: "wire" },
+      intentId: { type: String, default: null },
+      checkoutUrl: { type: String, default: null },
+      status: {
+        type: String,
+        enum: ["pending", "paid", "failed"],
+        default: "pending",
+      },
+    },
   },
   { timestamps: true },
 );
