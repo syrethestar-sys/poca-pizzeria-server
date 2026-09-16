@@ -36,7 +36,7 @@ const run = async () => {
   for (const category of categories) {
     const saved = await MenuCategory.findOneAndUpdate(
       { "name.en": category.name.en },
-      { name: category.name, kind: category.kind, order: category.order },
+      { name: category.name, kind: category.kind, order: category.order, image: category.image },
       { new: true, upsert: true, setDefaultsOnInsert: true },
     );
     idByKey.set(category.key, saved._id);

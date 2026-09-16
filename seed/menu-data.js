@@ -1,16 +1,22 @@
 // The printed Poca menu, in both languages, as the seed source of truth.
 // Prices are in tögrög. MN copy still needs an owner proofread.
 
+// The round tiles on the category picker. Delivered through Cloudinary with
+// f_auto,q_auto,w_256 — they render at 64px, so 256 covers retina and keeps
+// each one a few KB.
+const tile = (name) =>
+  `https://res.cloudinary.com/crbcsumf/image/upload/f_auto,q_auto,w_256,c_fill/poca-category-${name}`;
+
 export const categories = [
-  { key: "starter", kind: "food", order: 1, name: { en: "Starter", mn: "Зууш" } },
-  { key: "pizza", kind: "food", order: 2, name: { en: "Pizza", mn: "Пицца" } },
-  { key: "sides", kind: "food", order: 3, name: { en: "Side dishes", mn: "Хачир хоол" } },
-  { key: "coffee", kind: "drink", order: 4, name: { en: "Coffee", mn: "Кофе" } },
-  { key: "tea", kind: "drink", order: 5, name: { en: "Tea", mn: "Цай" } },
-  { key: "soft", kind: "drink", order: 6, name: { en: "Soft drinks", mn: "Хөнгөн ундаа" } },
-  { key: "beer", kind: "drink", order: 7, name: { en: "Beer", mn: "Шар айраг" } },
-  { key: "cocktails", kind: "drink", order: 8, name: { en: "Cocktails", mn: "Коктейл" } },
-  { key: "wine", kind: "drink", order: 9, name: { en: "Wine", mn: "Дарс" } },
+  { key: "starter", kind: "food", order: 1, image: tile("starter"), name: { en: "Starter", mn: "Зууш" } },
+  { key: "pizza", kind: "food", order: 2, image: tile("pizza"), name: { en: "Pizza", mn: "Пицца" } },
+  { key: "sides", kind: "food", order: 3, image: tile("sides"), name: { en: "Side dishes", mn: "Хачир хоол" } },
+  { key: "coffee", kind: "drink", order: 4, image: tile("coffee"), name: { en: "Coffee", mn: "Кофе" } },
+  { key: "tea", kind: "drink", order: 5, image: tile("tea"), name: { en: "Tea", mn: "Цай" } },
+  { key: "soft", kind: "drink", order: 6, image: tile("soft"), name: { en: "Soft drinks", mn: "Хөнгөн ундаа" } },
+  { key: "beer", kind: "drink", order: 7, image: tile("beer"), name: { en: "Beer", mn: "Шар айраг" } },
+  { key: "cocktails", kind: "drink", order: 8, image: tile("cocktails"), name: { en: "Cocktails", mn: "Коктейл" } },
+  { key: "wine", kind: "drink", order: 9, image: tile("wine"), name: { en: "Wine", mn: "Дарс" } },
 ];
 
 const GLASS = { en: "Glass", mn: "Хундага" };
