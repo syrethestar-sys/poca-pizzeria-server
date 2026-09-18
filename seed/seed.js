@@ -1,6 +1,12 @@
 // Loads the printed menu into MongoDB and creates the first admin user.
-//   npm run seed            → adds anything missing, leaves existing rows alone
+//   npm run seed            → adds anything missing, and re-syncs the menu
+//                             content of rows that already exist
 //   npm run seed -- --fresh → wipes the menu collections first
+//
+// Re-syncing is not the same as leaving rows alone: name, description, price,
+// variants, tags and order are rewritten from menu-data.js every run, so edits
+// made in the admin panel to those fields get reverted. What survives a re-seed
+// is the state the kitchen owns — the sold-out flag and uploaded item photos.
 //
 // Admin credentials come from SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD.
 
@@ -54,14 +60,24 @@ const run = async () => {
     await MenuItem.findOneAndUpdate(
       { "name.en": item.name.en, category: categoryId },
       {
-        name: item.name,
-        description: item.description ?? { en: "", mn: "" },
-        price: item.price,
-        variants: item.variants ?? [],
-        tags: item.tags ?? [],
-        category: categoryId,
-        available: true,
-        order: index,
+        // Menu content — this file is the source of truth, so it wins on
+        // every run. `order` lives here too: there is no reorder UI in the
+        // admin panel, so the only way to re-sort the menu is to move an
+        // entry in menu-data.js and re-seed.
+        $set: {
+          name: item.name,
+          description: item.description ?? { en: "", mn: "" },
+          price: item.price,
+          variants: item.variants ?? [],
+          tags: item.tags ?? [],
+          category: categoryId,
+          order: index,
+        },
+        // Owned by the kitchen, not by this file. Staff flip this from the
+        // admin panel when a dish sells out; re-seeding must not quietly put
+        // it back on the menu. Same reasoning as `image`, which the seed has
+        // never written because the photo is uploaded through the panel.
+        $setOnInsert: { available: true },
       },
       { new: true, upsert: true, setDefaultsOnInsert: true },
     );

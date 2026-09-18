@@ -1,9 +1,13 @@
 // Sets only the round tile image on each menu category.
 //   node seed/set-category-images.js
 //
-// Deliberately narrower than seed.js: that script also rewrites every menu
-// item and forces available:true, which would un-hide anything marked sold out.
-// This one touches nothing but the nine category images.
+// Deliberately narrower than seed.js: that script also rewrites the name,
+// description, price, variants, tags and order of every menu item from
+// menu-data.js. This one touches nothing but the nine category images.
+//
+// It used to carry a stronger warning — seed.js also forced available:true and
+// so un-hid anything marked sold out. That is fixed; seed.js now only sets
+// `available` on rows it creates.
 
 import "dotenv/config";
 import mongoose from "mongoose";
