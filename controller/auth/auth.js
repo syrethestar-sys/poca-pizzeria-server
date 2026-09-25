@@ -42,6 +42,24 @@ export const loginController = async (request, response) => {
   }
 };
 
+// The client keeps a copy of the user in localStorage, which the person can
+// edit. This is how it finds out who it actually is: the token is verified,
+// then the record is read fresh, so a hand-edited role is simply overwritten
+// by the real one on the next check.
+export const meController = async (request, response) => {
+  try {
+    const user = await User.findById(request.user.id);
+
+    if (!user) {
+      return response.status(401).json({ message: "Session no longer valid" });
+    }
+
+    response.status(200).json({ message: "ok", user: safe(user) });
+  } catch (err) {
+    response.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const signUpController = async (request, response) => {
   try {
     const { email, password, name, phone } = request.body ?? {};
