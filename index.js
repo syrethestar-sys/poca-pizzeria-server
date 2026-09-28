@@ -12,8 +12,8 @@ const app = express();
 
 const PORT = process.env.PORT ?? 1000;
 
-// Behind Vercel every request arrives from a proxy. One hop is what Vercel
-// adds; without this, req.ip is the proxy rather than the caller.
+// Behind Render (or Vercel) every request arrives through one proxy hop;
+// without this, req.ip is the proxy rather than the caller.
 app.set("trust proxy", 1);
 
 // Wire webhook signatures are computed over the exact raw bytes, so the
@@ -34,11 +34,9 @@ app.use(
   }),
 );
 
-// Flood protection lives in the Vercel firewall, not here. Counting requests
-// in this process only ever counts one instance's share of the traffic, so the
-// limit it enforces is a fraction of the real one — and the counters grow in
-// memory while the flood is happening. The edge refuses the request before
-// this function is invoked at all.
+// Flood protection belongs at the edge (a firewall/WAF in front of the API),
+// not here: counting requests in this process only counts one instance's
+// share of the traffic, and the counters grow in memory during the flood.
 
 app.use(async (request, response, next) => {
   try {
