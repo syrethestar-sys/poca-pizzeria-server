@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 import { Order } from "../../schemas/order.js";
+import { refreshPayment } from "../../lib/payments.js";
+
+const RECHECK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export const listOrderController = async (request, response) => {
   try {
@@ -21,6 +24,16 @@ export const listOrderController = async (request, response) => {
     if (status) filter.status = status;
 
     const orders = await Order.find(filter).sort({ createdAt: -1 });
+
+    // Catch up on payments whose webhook was missed (e.g. while the server
+    // slept). Only recent pending orders, so the list stays quick.
+    const since = Date.now() - RECHECK_WINDOW_MS;
+    await Promise.all(
+      orders
+        .filter((o) => o.payment?.status === "pending" && o.createdAt?.getTime() > since)
+        .slice(0, 10)
+        .map(refreshPayment),
+    );
 
     response.status(200).json({ message: "Orders found", orders });
   } catch (err) {

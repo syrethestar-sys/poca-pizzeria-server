@@ -1,14 +1,7 @@
 import mongoose from "mongoose";
 import { Order } from "../../schemas/order.js";
 import { MenuItem } from "../../schemas/menu-item.js";
-import { wire, toMinorUnits } from "../../lib/wire.js";
-
-const extractCheckoutUrl = (nextAction) =>
-  nextAction?.redirect_to_url?.url ??
-  nextAction?.hosted_url ??
-  nextAction?.checkout_url ??
-  nextAction?.qr_code?.url ??
-  null;
+import { wire, toMinorUnits, createCheckoutSession, operatorParams } from "../../lib/wire.js";
 
 // The client sends item ids and quantities; prices are re-read from the
 // database so a tampered cart cannot set its own total.
@@ -77,26 +70,25 @@ export const createOrderController = async (request, response) => {
     });
 
     try {
+      const orderId = String(order._id);
       const intent = await wire.paymentIntents.create({
         amount: toMinorUnits(total),
         currency: "MNT",
-        automatic_operator: true,
-        metadata: { orderId: String(order._id) },
+        ...operatorParams(),
+        metadata: { orderId },
+        idempotencyKey: `pi-order-${orderId}`,
       });
-      const confirmed = await wire.paymentIntents.confirm(intent.id, {
-        return_url: `${process.env.FRONTEND_URL}/orders`,
+      const session = await createCheckoutSession(intent.id, {
+        successUrl: `${process.env.FRONTEND_URL}/orders?order=${orderId}`,
+        cancelUrl: `${process.env.FRONTEND_URL}/orders?order=${orderId}`,
+        idempotencyKey: `cs-order-${orderId}`,
       });
-      const checkoutUrl = extractCheckoutUrl(confirmed.next_action);
 
-      if (!checkoutUrl) {
-        throw new Error("Wire did not return a checkout link");
-      }
-
-      order.payment = { provider: "wire", intentId: confirmed.id, checkoutUrl, status: "pending" };
+      order.payment = { provider: "wire", intentId: intent.id, checkoutUrl: session.url, status: "pending" };
       await order.save();
     } catch (paymentErr) {
       await Order.findByIdAndDelete(order._id);
-      console.error("Wire payment setup failed:", paymentErr);
+      console.error("Wire payment setup failed:", paymentErr.message ?? paymentErr);
       return response
         .status(502)
         .json({ message: "Could not start payment. Please try again." });
@@ -104,6 +96,7 @@ export const createOrderController = async (request, response) => {
 
     response.status(201).json({ message: "Order placed", order });
   } catch (err) {
-    response.status(500).json({ message: "Internal server error", error: err.message ?? err });
+    console.error("Order create failed:", err);
+    response.status(500).json({ message: "Internal server error" });
   }
 };
