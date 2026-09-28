@@ -2,18 +2,31 @@ import mongoose from "mongoose";
 import { Order } from "../../schemas/order.js";
 import { MenuItem } from "../../schemas/menu-item.js";
 import { wire, toMinorUnits, createCheckoutSession, operatorParams } from "../../lib/wire.js";
+import { normalizeMnPhone } from "../../lib/phone.js";
+import { optionalUserId } from "../../lib/optional-user.js";
 
 // The client sends item ids and quantities; prices are re-read from the
 // database so a tampered cart cannot set its own total.
 export const createOrderController = async (request, response) => {
   try {
-    const { lines, type, customer, user } = request.body ?? {};
+    const { lines, type, customer } = request.body ?? {};
 
     if (!Array.isArray(lines) || lines.length === 0) {
       return response.status(400).json({ message: "The order has no items" });
     }
     if (!customer?.name || !customer?.phone) {
       return response.status(400).json({ message: "A name and phone number are required" });
+    }
+    const phone = normalizeMnPhone(customer.phone);
+    if (!phone) {
+      return response.status(400).json({ message: "Enter an 8-digit Mongolian phone number" });
+    }
+    let phone2 = "";
+    if (customer.phone2) {
+      phone2 = normalizeMnPhone(customer.phone2);
+      if (!phone2) {
+        return response.status(400).json({ message: "The additional phone number is not valid" });
+      }
     }
     if (type === "delivery" && !customer?.address) {
       return response.status(400).json({ message: "A delivery address is required" });
@@ -61,12 +74,15 @@ export const createOrderController = async (request, response) => {
 
     const total = priced.reduce((sum, l) => sum + l.price * l.quantity, 0);
 
+    // Signed in → the order joins that account. Guests can order too; they
+    // follow the order with its id and their phone number (/order/track).
+    const userId = optionalUserId(request);
     const order = await Order.create({
-      user: mongoose.isValidObjectId(user) ? user : undefined,
+      user: userId && mongoose.isValidObjectId(userId) ? userId : undefined,
       lines: priced,
       total,
       type: type ?? "delivery",
-      customer,
+      customer: { ...customer, phone, phone2 },
     });
 
     try {
