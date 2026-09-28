@@ -7,6 +7,7 @@ import authRouter from "./router/auth/auth.js";
 import menuCategoryRouter from "./router/menu-category/menu-category-router.js";
 import menuItemRouter from "./router/menu-item/menu-item-router.js";
 import orderRouter from "./router/order/order-router.js";
+import uploadRouter from "./router/upload/upload-router.js";
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use("/auth", authRouter);
 app.use("/menu-category", menuCategoryRouter);
 app.use("/menu-item", menuItemRouter);
 app.use("/order", orderRouter);
+app.use("/upload", uploadRouter);
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
