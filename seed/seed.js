@@ -1,4 +1,4 @@
-// Loads the printed menu into MongoDB and creates the first admin user.
+// Loads the printed menu into MongoDB and grants the first admin role.
 //   npm run seed            → adds anything missing, and re-syncs the menu
 //                             content of rows that already exist
 //   npm run seed -- --fresh → wipes the menu collections first
@@ -8,11 +8,11 @@
 // made in the admin panel to those fields get reverted. What survives a re-seed
 // is the state the kitchen owns — the sold-out flag and uploaded item photos.
 //
-// Admin credentials come from SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD.
+// SEED_ADMIN_EMAIL promotes an account that already exists. Clerk owns sign-up,
+// so sign up through the app first, then run this to get the admin role.
 
 import "dotenv/config";
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
 
 import { connectDB } from "../connectDB.js";
 import { MenuCategory } from "../schemas/menu-category.js";
@@ -85,24 +85,26 @@ const run = async () => {
   }
   console.log(`menu items: ${written}`);
 
+  // Clerk owns credentials now, so this grants the role rather than creating
+  // the account — there is no password to set here any more, and a record with
+  // no clerkId could never be signed into anyway. Sign up through the app
+  // first, then run the seed with SEED_ADMIN_EMAIL set to that address.
   const adminEmail = (process.env.SEED_ADMIN_EMAIL ?? "").toLowerCase();
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
 
-  if (adminEmail && adminPassword) {
-    const existing = await User.findOne({ email: adminEmail });
-    if (existing) {
-      console.log(`admin ${adminEmail} already exists — left untouched`);
+  if (adminEmail) {
+    const promoted = await User.findOneAndUpdate(
+      { email: adminEmail },
+      { $set: { role: "admin" } },
+      { returnDocument: "after" },
+    );
+
+    if (promoted) {
+      console.log(`admin: ${adminEmail}`);
     } else {
-      await User.create({
-        email: adminEmail,
-        password: await bcrypt.hash(adminPassword, 10),
-        name: "Poca admin",
-        role: "admin",
-      });
-      console.log(`admin created: ${adminEmail}`);
+      console.log(`no account for ${adminEmail} yet — sign up in the app first, then re-run`);
     }
   } else {
-    console.log("no SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD set — skipped the admin user");
+    console.log("no SEED_ADMIN_EMAIL set — skipped the admin role");
   }
 
   await mongoose.connection.close();

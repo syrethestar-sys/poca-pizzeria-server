@@ -1,4 +1,8 @@
 node_modules
 .env
+# Catches .env.local, .env.production and stray copies like .env.bak — a bare
+# `.env` line leaves those tracked, which is how a secret gets committed.
+.env.*
+!.env.example
 .vercel
 .DS_Store

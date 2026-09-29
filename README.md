@@ -26,14 +26,13 @@ when `mn` is empty, so a half-translated menu still renders.
 | `MenuCategory` | `name`, `kind` (`food` \| `drink`), `order` |
 | `MenuItem` | `name`, `description`, `price` **or** `variants[]` (wine: glass/bottle), `tags` (`spicy`, `extra-spicy`, `vegetarian`, `white`), `category`, `available`, `image` |
 | `Order` | `lines[]` frozen at checkout, `total`, `type` (`delivery` \| `pickup`), `customer`, `status` |
-| `User` | `email`, `password` (bcrypt), `role` (`user` \| `admin`) |
+| `User` | `email`, `clerkId` (the Clerk account behind it), `name`, `phone`, `role` (`user` \| `admin`) — no password; Clerk holds the credentials |
 
 ## Endpoints
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/auth/sign-up` | Create an account |
-| POST | `/auth/login` | Returns the safe user object |
+| GET | `/auth/me` | The signed-in account as this database sees it, role included. Sign-in, sign-up and password reset are Clerk's, not ours |
 | GET | `/menu-category/get` | All categories, `?kind=food\|drink` |
 | POST | `/menu-category/create` | Admin |
 | PUT | `/menu-category/update` | Admin |
@@ -47,8 +46,20 @@ when `mn` is empty, so a half-translated menu still renders.
 | GET | `/order/get` | `?user=<id>&status=<status>` |
 | PUT | `/order/status` | Admin — move an order through the queue |
 
-## Known gaps
+## Auth
 
-Auth returns a plain user object, not a token — the same approach as the
-reference project. Before this goes anywhere public, the admin write routes
-need real session or JWT checks; right now they are open.
+Clerk handles sign-in, sign-up and password reset. This API only verifies the
+session and decides what it is allowed to do.
+
+`clerkMiddleware()` reads the session off each request; `requireAuth` and
+`requireAdmin` in `middleware/auth.js` then resolve it to a `User` by
+`clerkId`. A session that has no record yet gets one created on the spot — an
+account needs a row here before it can be authorised, because orders join on
+`_id` and the role is read from this collection.
+
+The role is deliberately read from the record on every request rather than
+taken from the session token. A token can be cached for its whole lifetime and
+would not notice that someone was demoted an hour ago.
+
+`CLERK_SECRET_KEY` is required. Without it the API still boots, but every
+Clerk session is rejected — it logs a warning at startup saying so.

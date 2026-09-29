@@ -51,11 +51,14 @@ it documents what the project needs.
 cd poca-server
 # .env → MONGO_URI=mongodb+srv://…@…/poca?retryWrites=true&w=majority
 #         SEED_ADMIN_EMAIL=admin@poca.mn
-#         SEED_ADMIN_PASSWORD=<pick one>
 npm run seed
 ```
 
-You should see `categories: 9` then `menu items: 56` then `admin created`.
+You should see `categories: 9` then `menu items: 56` then `admin: admin@poca.mn`.
+
+The seed grants the admin role, it does not create the login — Clerk owns
+sign-up. If it prints `no account for … yet`, sign up through the app with that
+address first and run it again.
 
 ---
 
@@ -68,7 +71,20 @@ Vercel → **Add New → Project** → import `poca-pizzeria-server`.
 | Framework preset | **Other** |
 | Root directory | `./` |
 | Build command | leave empty |
-| Environment variable | `MONGO_URI` = your Atlas string |
+| Environment variables | `MONGO_URI`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `FRONTEND_URL`, plus the `WIRE_*` and `CLOUDINARY_*` keys — see `.env.example` |
+
+Without `CLERK_SECRET_KEY` the API boots but rejects every session, so the site
+deploys and then nobody can sign in. Its startup log says so if you miss it.
+
+This deployment runs on Clerk **development** keys, which work on any domain —
+`*.vercel.app` included. They carry usage limits and show a development notice
+in Clerk's UI, which is fine here and upgrades later without code changes.
+
+Moving to a production instance needs a domain you own. `clerk deploy` rejects
+`*.vercel.app`, and not arbitrarily: `vercel.app` is on the Public Suffix List,
+so browsers refuse to scope a cookie to it and there is no zone under it where
+you could add Clerk's CNAMEs. With a real domain — `pocapizzeria.mn`, say —
+`npx -y clerk@latest deploy` sets up the instance and prints the DNS records.
 
 `vercel.json` already routes every path into `index.js`, and `index.js` skips
 `app.listen` when `process.env.VERCEL` is set, so it runs as a function.

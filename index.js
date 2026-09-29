@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { clerkMiddleware } from "@clerk/express";
 import express from "express";
 import cors from "cors";
 
@@ -34,6 +35,19 @@ app.use(
     origin: [process.env.FRONTEND_URL, "http://localhost:3000"].filter(Boolean),
   }),
 );
+
+// Reads the session off the request so getAuth() can answer anywhere
+// downstream. It does not reject anything by itself — the route's own
+// requireAuth/requireAdmin still decides that.
+//
+// Conditional because a deployment without Clerk keys is not broken, only
+// older: the legacy JWT path is still a complete auth system, and that is a
+// better outcome than an API that refuses to boot over a missing variable.
+if (process.env.CLERK_SECRET_KEY) {
+  app.use(clerkMiddleware());
+} else {
+  console.warn("CLERK_SECRET_KEY not set — Clerk sessions rejected, legacy JWT only");
+}
 
 // Flood protection belongs at the edge (a firewall/WAF in front of the API),
 // not here: counting requests in this process only counts one instance's

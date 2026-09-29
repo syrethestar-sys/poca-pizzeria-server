@@ -76,7 +76,7 @@ export const createOrderController = async (request, response) => {
 
     // Signed in → the order joins that account. Guests can order too; they
     // follow the order with its id and their phone number (/order/track).
-    const userId = optionalUserId(request);
+    const userId = await optionalUserId(request);
     const order = await Order.create({
       user: userId && mongoose.isValidObjectId(userId) ? userId : undefined,
       lines: priced,
